@@ -10,7 +10,7 @@ import {
   FiHelpCircle,
 } from "react-icons/fi";
 
-function Navbar({ toggleSidebar, isSidebarOpen }) {
+function Navbar({ toggleSidebar, isSidebarOpen, onLogout }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -38,8 +38,22 @@ function Navbar({ toggleSidebar, isSidebarOpen }) {
   }, []);
 
   const handleLogout = () => {
+    // Clear all storage
+    localStorage.removeItem("token");
     localStorage.removeItem("isLoggedIn");
-    window.location.reload();
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("isLoggedIn");
+    
+    // Close dropdown
+    setIsDropdownOpen(false);
+    
+    // Call parent logout function if provided
+    if (onLogout) {
+      onLogout();
+    } else {
+      // Fallback: redirect to login
+      window.location.href = "/login";
+    }
   };
 
   return (
@@ -62,11 +76,6 @@ function Navbar({ toggleSidebar, isSidebarOpen }) {
             <h2 className="text-gray-800 font-semibold text-base md:text-lg">
               Admin Dashboard
             </h2>
-            <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
-              <span>Home</span>
-              <span>/</span>
-              <span className="text-orange-500">Dashboard</span>
-            </div>
           </div>
         </div>
 
@@ -163,10 +172,7 @@ function Navbar({ toggleSidebar, isSidebarOpen }) {
 
                 {/* Logout - Inside Dropdown */}
                 <button
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    handleLogout();
-                  }}
+                  onClick={handleLogout}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
                 >
                   <FiLogOut className="text-sm" />

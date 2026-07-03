@@ -7,17 +7,19 @@ import Speakers from "./pages/Speakers";
 import Sponsors from "./pages/Sponsors";
 import Agenda from "./pages/Agenda";
 import Contacts from "./pages/Contacts";
+import BoothBookings from "./pages/BoothBookings";
 
 import Sidebar from "./components/sidebar";
 import Navbar from "./components/Navbar";
+import Blogs from "./pages/Blogs";
+import BrochureDownloads from "./pages/BrochureDownloads";
+import Registrations from "./pages/Registrations";
 
 function ProtectedRoute({ children }) {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
-  // return isLoggedIn ? children : <Navigate to="/login" />;
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 }
-
 
 function Layout() {
   return (
@@ -34,6 +36,11 @@ function Layout() {
             <Route path="/sponsors" element={<Sponsors />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/contacts" element={<Contacts />} />
+            <Route path="/booth-bookings" element={<BoothBookings />} />
+            <Route path="/Blogs" element={<Blogs />} />
+
+            <Route path="/brochure-downloads" element={<BrochureDownloads />} />
+             <Route path="/registrations" element={<Registrations />} />
           </Routes>
         </main>
       </div>
@@ -43,7 +50,7 @@ function Layout() {
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("isLoggedIn") === "true",
+    sessionStorage.getItem("isLoggedIn") === "true",
   );
 
   return (

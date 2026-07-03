@@ -1,11 +1,25 @@
 import { useState, useEffect } from "react";
 
+import {
+  getSpeakers,
+  createSpeaker,
+  updateSpeaker,
+  deleteSpeaker,
+} from "../services/SpeakerApi";
+
 function Speakers() {
+  /* -----MODAL STATES --------*/
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState("");
+
+  /*--------------TOAST NOTIFICATION ------------- */
+
   const [toast, setToast] = useState(null);
   const [progress, setProgress] = useState(0);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -13,56 +27,10 @@ function Speakers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const [speakers, setSpeakers] = useState([
-    {
-      id: 1,
-      name: "John Smith",
-      company: "Tesla Energy",
-      designation: "Director",
-    },
-    {
-      id: 2,
-      name: "Sarah Wilson",
-      company: "Adani Green",
-      designation: "CEO",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      company: "SpaceX",
-      designation: "CTO",
-    },
-    {
-      id: 4,
-      name: "Emma Davis",
-      company: "Google Cloud",
-      designation: "VP of Engineering",
-    },
-    {
-      id: 5,
-      name: "Dr. Priya Mehta",
-      company: "Microsoft",
-      designation: "AI Research Lead",
-    },
-    {
-      id: 6,
-      name: "Vikram Shah",
-      company: "Amazon",
-      designation: "Cloud Architect",
-    },
-    {
-      id: 7,
-      name: "Ananya Reddy",
-      company: "Apple",
-      designation: "Product Manager",
-    },
-    {
-      id: 8,
-      name: "Rajesh Kumar",
-      company: "Meta",
-      designation: "Engineering Director",
-    },
-  ]);
+  const [speakers, setSpeakers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Auto-dismiss toast after 3 seconds with progress bar
   useEffect(() => {
@@ -90,23 +58,19 @@ function Speakers() {
     }
   }, [toast]);
 
-  const handleAddSpeaker = (newSpeaker) => {
-    setSpeakers([
-      ...speakers,
-      {
-        id: Date.now(),
-        ...newSpeaker,
-      },
-    ]);
-    setIsModalOpen(false);
-    showToast("Speaker added successfully!", "success");
-  };
+  /*-------------AddSpeaker---------------*/
+  const handleAddSpeaker = async (speakerData) => {
+    try {
+      await createSpeaker(speakerData);
 
-  const handleDeleteSpeaker = (id) => {
-    setSpeakers(speakers.filter((speaker) => speaker.id !== id));
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-    showToast("Speaker deleted successfully!", "success");
+      await fetchSpeakers();
+
+      setIsModalOpen(false);
+
+      showToast("Speaker added successfully!", "success");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const showToast = (message, type = "success") => {
@@ -118,22 +82,57 @@ function Speakers() {
     setIsModalOpen(true);
   };
 
-  const handleUpdateSpeaker = (updatedSpeaker) => {
-    setSpeakers(
-      speakers.map((speaker) =>
-        speaker.id === editingSpeaker.id
-          ? { ...speaker, ...updatedSpeaker }
-          : speaker,
-      ),
-    );
-    setEditingSpeaker(null);
-    setIsModalOpen(false);
-    showToast("Speaker updated successfully!", "success");
+
+  /*------------  UPDATE  SPEAKER------------*/
+  const handleUpdateSpeaker = async (updatedSpeaker) => {
+    try {
+      const res = await updateSpeaker(editingSpeaker.id, updatedSpeaker);
+
+      console.log("UPDATE RES =>", res);
+
+      await fetchSpeakers();
+
+      setEditingSpeaker(null);
+      setIsModalOpen(false);
+
+      showToast("Speaker updated successfully!", "success");
+    } catch (error) {
+      console.log("UPDATE ERROR =>", error.response?.data || error);
+
+      showToast("Failed to update speaker!", "error");
+    }
   };
 
-  const handleDelete = (id, name) => {
-    setDeleteTarget({ id, name });
-    setShowDeleteModal(true);
+ /*------------  Delete  SPEAKER------------*/
+
+  const handleDeleteSpeaker = async (id) => {
+    try {
+      await deleteSpeaker(id);
+
+      await fetchSpeakers();
+
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+
+      showToast("Speaker deleted successfully!", "success");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  /*-------------fetchSpeakers-----------*/
+  const fetchSpeakers = async () => {
+    try {
+      const res = await getSpeakers();
+
+      console.log("API DATA =>", res);
+
+      setSpeakers(res.data || []);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredSpeakers = speakers.filter(
@@ -164,6 +163,10 @@ function Speakers() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  useEffect(() => {
+    fetchSpeakers();
+  }, []);
 
   // Calculate stats
   const totalSpeakers = speakers.length;
@@ -266,53 +269,51 @@ function Speakers() {
         <button
           onClick={() => {
             setEditingSpeaker(null);
+            setImagePreview(null);
             setIsModalOpen(true);
           }}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl shadow-sm"
         >
-          + Add Speaker
+          Add Speaker
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid md:grid-cols-3 gap-5">
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500 text-sm">Total Speakers</p>
-              <h2 className="text-4xl font-bold mt-1">{totalSpeakers}</h2>
-            </div>
-            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-2xl">
-              🎤
-            </div>
+        {/* Total Speakers */}
+        <div className="bg-white py-5 rounded-3xl shadow-sm">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">Total Speakers</p>
+
+            <h2 className="text-4xl font-bold text-slate-900 mt-2">
+              {totalSpeakers}
+            </h2>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500 text-sm">Keynote Speakers</p>
-              <h2 className="text-4xl font-bold text-blue-600 mt-1">
-                {keynoteSpeakers}
-              </h2>
-            </div>
-            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">
-              🎯
-            </div>
+        {/* Keynote Speakers */}
+        <div className="bg-white py-5 rounded-3xl shadow-sm">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">
+              Keynote Speakers
+            </p>
+
+            <h2 className="text-4xl font-bold text-blue-600 mt-2">
+              {keynoteSpeakers}
+            </h2>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500 text-sm">Industry Experts</p>
-              <h2 className="text-4xl font-bold text-green-600 mt-1">
-                {industryExperts}
-              </h2>
-            </div>
-            <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center text-2xl">
-              💡
-            </div>
+        {/* Industry Experts */}
+        <div className="bg-white py-5 rounded-3xl shadow-sm">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">
+              Industry Experts
+            </p>
+
+            <h2 className="text-4xl font-bold text-green-600 mt-2">
+              {industryExperts}
+            </h2>
           </div>
         </div>
       </div>
@@ -357,6 +358,17 @@ function Speakers() {
                 <th className="text-left p-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">
                   Designation
                 </th>
+                <th className="text-left p-5 text-sm font-semibold text-slate-600 uppercase">
+                  Bio
+                </th>
+
+                <th className="text-left p-5 text-sm font-semibold text-slate-600 uppercase">
+                  Image
+                </th>
+
+                <th className="text-left p-5 text-sm font-semibold text-slate-600 uppercase">
+                  Social Links
+                </th>
                 <th className="text-left p-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
@@ -379,6 +391,48 @@ function Speakers() {
                     <td className="p-5 text-slate-600 text-base">
                       {speaker.designation}
                     </td>
+                    <td className="p-5 text-slate-600 text-base max-w-xs">
+                      {speaker.bio}
+                    </td>
+
+                    <td className="p-5">
+                      <img
+                        src={speaker.image}
+                        alt={speaker.name}
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                    </td>
+
+                    <td className="p-5">
+                      <div className="flex flex-col gap-1 text-sm">
+                        <a
+                          href={speaker.linkedin_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600"
+                        >
+                          LinkedIn
+                        </a>
+
+                        <a
+                          href={speaker.twitter_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sky-500"
+                        >
+                          Twitter
+                        </a>
+
+                        <a
+                          href={speaker.website_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-green-600"
+                        >
+                          Website
+                        </a>
+                      </div>
+                    </td>
                     <td className="p-5 flex gap-2">
                       <button
                         onClick={() => handleEditSpeaker(speaker)}
@@ -387,7 +441,10 @@ function Speakers() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(speaker.id, speaker.name)}
+                        onClick={() => {
+                          setDeleteTarget(speaker);
+                          setShowDeleteModal(true);
+                        }}
                         className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition text-sm font-medium"
                       >
                         Delete
@@ -398,7 +455,7 @@ function Speakers() {
               ) : (
                 <tr>
                   <td
-                    colSpan="4"
+                    colSpan="7"
                     className="text-center p-10 text-slate-500 text-base"
                   >
                     {searchTerm
@@ -498,7 +555,7 @@ function Speakers() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-xl">
             <div className="p-6 border-b">
               <h2 className="text-2xl font-bold text-slate-800">
                 {editingSpeaker ? "Edit Speaker" : "Add Speaker"}
@@ -508,44 +565,157 @@ function Speakers() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+
                 const formData = new FormData(e.target);
-                const speakerData = {
-                  name: formData.get("name"),
-                  company: formData.get("company"),
-                  designation: formData.get("designation"),
-                };
 
                 if (editingSpeaker) {
-                  handleUpdateSpeaker(speakerData);
+                  handleUpdateSpeaker(formData);
                 } else {
-                  handleAddSpeaker(speakerData);
+                  handleAddSpeaker(formData);
                 }
               }}
             >
-              <div className="p-6 space-y-4">
-                <input
-                  name="name"
-                  defaultValue={editingSpeaker?.name || ""}
-                  placeholder="Speaker Name"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
-                  required
-                />
+              {/* edit modal */}
 
-                <input
-                  name="company"
-                  defaultValue={editingSpeaker?.company || ""}
-                  placeholder="Company"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
-                  required
-                />
+              <div className="p-6 space-y-6">
+                {/* Top Section */}
+                <div className="grid grid-cols-12 gap-6 items-start">
+                  {/* Image Section */}
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col items-center">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-36 h-36 rounded-2xl object-cover shadow-md border-4 border-white"
+                        />
+                      ) : editingSpeaker?.image ? (
+                        <img
+                          src={editingSpeaker.image}
+                          alt="Speaker"
+                          className="w-36 h-36 rounded-2xl object-cover shadow-md border-4 border-white"
+                        />
+                      ) : (
+                        <div className="w-36 h-36 rounded-2xl bg-slate-200 flex items-center justify-center">
+                          No Image
+                        </div>
+                      )}
 
-                <input
-                  name="designation"
-                  defaultValue={editingSpeaker?.designation || ""}
-                  placeholder="Designation"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-base"
-                  required
-                />
+                      <label
+                        htmlFor="speakerImage"
+                        className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl cursor-pointer text-sm font-medium transition"
+                      >
+                        {editingSpeaker ? "Change Photo" : "Add Photo"}
+                      </label>
+
+                      <input
+                        id="speakerImage"
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+
+                          if (file) {
+                            setImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Side Fields */}
+                  <div className="col-span-12 md:col-span-9">
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">
+                          Name
+                        </label>
+                        <input
+                          name="name"
+                          defaultValue={editingSpeaker?.name || ""}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">
+                          Company
+                        </label>
+                        <input
+                          name="company"
+                          defaultValue={editingSpeaker?.company || ""}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">
+                          Designation
+                        </label>
+                        <input
+                          name="designation"
+                          defaultValue={editingSpeaker?.designation || ""}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bio */}
+                    <div className="mt-5">
+                      <label className="block mb-2 text-sm font-semibold text-slate-700">
+                        Bio
+                      </label>
+
+                      <textarea
+                        rows="4"
+                        name="bio"
+                        defaultValue={editingSpeaker?.bio || ""}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      LinkedIn
+                    </label>
+
+                    <input
+                      name="linkedin_url"
+                      defaultValue={editingSpeaker?.linkedin_url || ""}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Twitter / X
+                    </label>
+
+                    <input
+                      name="twitter_url"
+                      defaultValue={editingSpeaker?.twitter_url || ""}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Website
+                    </label>
+
+                    <input
+                      name="website_url"
+                      defaultValue={editingSpeaker?.website_url || ""}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500 outline-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="p-6 border-t flex gap-3">
@@ -560,6 +730,7 @@ function Speakers() {
                   type="button"
                   onClick={() => {
                     setEditingSpeaker(null);
+                    setImagePreview(null);
                     setIsModalOpen(false);
                   }}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 py-3 rounded-xl transition font-medium text-base"

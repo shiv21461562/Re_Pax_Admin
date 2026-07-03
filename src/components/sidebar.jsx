@@ -7,8 +7,14 @@ import {
   FiMail,
   FiMenu,
   FiX,
+  FiFileText,
+  FiDownload,
+  FiClipboard,
+
 } from "react-icons/fi";
 import { useState, useEffect } from "react";
+
+import logo from "../assets/logo.png";
 
 function Sidebar() {
   const location = useLocation();
@@ -64,6 +70,27 @@ function Sidebar() {
       path: "/contacts",
       icon: <FiMail />,
     },
+    {
+      name: "Booth Bookings",
+      path: "/booth-bookings",
+      icon: <FiClipboard />,
+    },
+    {
+      name: "Blogs",
+      path: "/Blogs",
+      icon: <FiUsers />,
+    },
+    {
+      name: "Brochure",
+      path: "/brochure-downloads",
+      icon: <FiDownload />,
+    },
+
+{
+  name: "Registrations",
+  path: "/registrations",
+  icon: <FiClipboard />,
+}
   ];
 
   // Mobile toggle button
@@ -106,18 +133,13 @@ function Sidebar() {
         `}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-100 bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                <span className="text-orange-500">RE</span>
-                <span className="text-blue-900">PAX</span>
-              </h1>
-              <p className="text-sm text-gray-500 mt-1 font-medium">
-                Admin Panel
-              </p>
-            </div>
-            <div className="hidden md:block w-2 h-8 bg-orange-500 rounded-full"></div>
+        <div className="p-5 border-b border-gray-100 bg-white">
+          <div className="flex items-center">
+            <img
+              src={logo}
+              alt="REPAX Logo"
+              className="w-38 h-auto object-contain"
+            />
           </div>
         </div>
 

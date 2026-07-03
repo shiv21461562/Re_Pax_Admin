@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
 
+import {
+  getAgendas,
+  createAgenda,
+  updateAgenda,
+  deleteAgenda,
+} from "../services/AgendaApi";
+
 function Agenda() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
@@ -13,36 +20,19 @@ function Agenda() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const [agenda, setAgenda] = useState([
-    {
-      id: 1,
-      title: "Solar Energy Summit",
-      speaker: "John Smith",
-      date: "12 Jan 2026",
-      time: "10:00 AM",
-    },
-    {
-      id: 2,
-      title: "Green Hydrogen Future",
-      speaker: "Sarah Wilson",
-      date: "12 Jan 2026",
-      time: "02:00 PM",
-    },
-    {
-      id: 3,
-      title: "EV Revolution",
-      speaker: "Michael Brown",
-      date: "13 Jan 2026",
-      time: "11:00 AM",
-    },
-    {
-      id: 4,
-      title: "Sustainable Cities",
-      speaker: "Emma Davis",
-      date: "13 Jan 2026",
-      time: "03:00 PM",
-    },
-  ]);
+  const [agenda, setAgenda] = useState([]);
+
+  const fetchAgendas = async () => {
+    try {
+      const response = await getAgendas();
+
+      if (response.success) {
+        setAgenda(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   // Auto-dismiss toast after 3 seconds with progress bar
   useEffect(() => {
@@ -70,24 +60,40 @@ function Agenda() {
     }
   }, [toast]);
 
-  const handleAddSession = (newSession) => {
-    setAgenda([
-      ...agenda,
-      {
-        id: Date.now(),
-        ...newSession,
-      },
-    ]);
-    setIsModalOpen(false);
-    showToast("Session added successfully!", "success");
-  };
+const handleAddSession = async (newSession) => {
+  try {
+    const response = await createAgenda(newSession);
 
-  const handleDeleteSession = (id) => {
-    setAgenda(agenda.filter((item) => item.id !== id));
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-    showToast("Session deleted successfully!", "success");
-  };
+    if (response.success) {
+      await fetchAgendas();
+
+      setIsModalOpen(false);
+
+      showToast("Session added successfully!", "success");
+    }
+  } catch (error) {
+    console.log(error);
+    showToast("Failed to add session", "error");
+  }
+};
+const handleDeleteSession = async (id) => {
+  try {
+    const response = await deleteAgenda(id);
+
+    if (response.success) {
+      await fetchAgendas();
+
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+
+      showToast("Session deleted successfully!", "success");
+    }
+  } catch (error) {
+    console.log(error);
+
+    showToast("Failed to delete session", "error");
+  }
+};
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -98,18 +104,26 @@ function Agenda() {
     setIsModalOpen(true);
   };
 
-  const handleUpdateSession = (updatedSession) => {
-    setAgenda(
-      agenda.map((session) =>
-        session.id === editingSession.id
-          ? { ...session, ...updatedSession }
-          : session,
-      ),
+const handleUpdateSession = async (updatedSession) => {
+  try {
+    const response = await updateAgenda(
+      editingSession.id,
+      updatedSession
     );
-    setEditingSession(null);
-    setIsModalOpen(false);
-    showToast("Session updated successfully!", "success");
-  };
+
+    if (response.success) {
+      await fetchAgendas();
+
+      setEditingSession(null);
+      setIsModalOpen(false);
+
+      showToast("Session updated successfully!", "success");
+    }
+  } catch (error) {
+    console.log(error);
+    showToast("Failed to update session", "error");
+  }
+};
 
   const handleDelete = (id, title) => {
     setDeleteTarget({ id, title });
@@ -118,9 +132,9 @@ function Agenda() {
 
   const filteredAgenda = agenda.filter(
     (item) =>
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.speaker.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.date.toLowerCase().includes(searchTerm.toLowerCase()),
+      item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.speaker_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Pagination logic
@@ -142,18 +156,18 @@ function Agenda() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Calculate stats
+  useEffect(() => {
+    fetchAgendas();
+  }, []);
+
   const totalSessions = agenda.length;
-  const day1Sessions = agenda.filter((item) =>
-    item.date.includes("12 Jan"),
-  ).length;
-  const day2Sessions = agenda.filter((item) =>
-    item.date.includes("13 Jan"),
-  ).length;
+  const day1Sessions = 0;
+  const day2Sessions = 0;
 
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
+
       {toast && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in">
           <div className="bg-white rounded-2xl shadow-2xl p-4 min-w-[320px] max-w-md relative overflow-hidden">
@@ -253,49 +267,42 @@ function Agenda() {
           }}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl shadow-sm"
         >
-          + Add Session
+          Add Session
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid md:grid-cols-3 gap-5">
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500">Total Sessions</p>
-              <h2 className="text-4xl font-bold mt-2">{totalSessions}</h2>
-            </div>
-            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-2xl">
-              📅
-            </div>
+        {/* Total Sessions */}
+        <div className="bg-white py-5 rounded-3xl border border-orange-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">Total Sessions</p>
+
+            <h2 className="text-4xl font-bold text-slate-900 mt-2">
+              {totalSessions}
+            </h2>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500">Day 1 Sessions</p>
-              <h2 className="text-4xl font-bold text-blue-600 mt-2">
-                {day1Sessions}
-              </h2>
-            </div>
-            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">
-              📆
-            </div>
+        {/* Day 1 Sessions */}
+        <div className="bg-white py-5 rounded-3xl border border-blue-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">Day 1 Sessions</p>
+
+            <h2 className="text-4xl font-bold text-blue-600 mt-2">
+              {day1Sessions}
+            </h2>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-slate-500">Day 2 Sessions</p>
-              <h2 className="text-4xl font-bold text-green-600 mt-2">
-                {day2Sessions}
-              </h2>
-            </div>
-            <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center text-2xl">
-              📆
-            </div>
+        {/* Day 2 Sessions */}
+        <div className="bg-white py-5 rounded-3xl border border-green-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-slate-500 text-sm font-medium">Day 2 Sessions</p>
+
+            <h2 className="text-4xl font-bold text-green-600 mt-2">
+              {day2Sessions}
+            </h2>
           </div>
         </div>
       </div>
@@ -334,15 +341,31 @@ function Agenda() {
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Session
                 </th>
+
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Speaker
                 </th>
+
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
-                  Date
+                  Session Type
                 </th>
+
+                <th className="text-left p-5 text-sm font-semibold text-slate-600">
+                  Location
+                </th>
+
+                <th className="text-left p-5 text-sm font-semibold text-slate-600">
+                  Description
+                </th>
+
+                <th className="text-left p-5 text-sm font-semibold text-slate-600">
+                  Status
+                </th>
+
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Time
                 </th>
+
                 <th className="text-left p-5 text-sm font-semibold text-slate-600">
                   Actions
                 </th>
@@ -357,26 +380,55 @@ function Agenda() {
                     className="border-b border-gray-100 hover:bg-gray-50"
                   >
                     <td className="p-5 font-semibold">{item.title}</td>
-                    <td className="p-5">{item.speaker}</td>
-                    <td className="p-5">{item.date}</td>
+
+                    <td className="p-5">{item.speaker_name}</td>
+
                     <td className="p-5">
-                      <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm">
+                      <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm">
+                        {item.session_type}
+                      </span>
+                    </td>
+
+                    <td className="p-5">{item.location}</td>
+
+                    <td className="p-5 max-w-xs">
+                      <div className="line-clamp-2">{item.description}</div>
+                    </td>
+
+                    <td className="p-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          item.status === 1
+                            ? "bg-green-100 text-green-600"
+                            : "bg-red-100 text-red-600"
+                        }`}
+                      >
+                        {item.status === 1 ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+
+                    <td className="p-5">
+                      <span className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm whitespace-nowrap inline-block">
                         {item.time}
                       </span>
                     </td>
-                    <td className="p-5 flex gap-3">
-                      <button
-                        onClick={() => handleEditSession(item)}
-                        className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white transition font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id, item.title)}
-                        className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition font-medium"
-                      >
-                        Delete
-                      </button>
+
+                    <td className="p-5">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleEditSession(item)}
+                          className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white transition font-medium"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(item.id, item.title)}
+                          className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -477,25 +529,36 @@ function Agenda() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Edit  Modal */}
+
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-xl">
-            <div className="p-6 border-b">
-              <h2 className="text-2xl font-bold">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-3xl bg-white rounded-3xl shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="px-8 py-6 border-b bg-gradient-to-r from-slate-50 to-white">
+              <h2 className="text-3xl font-bold text-slate-800">
                 {editingSession ? "Edit Session" : "Add Session"}
               </h2>
+
+              <p className="text-slate-500 mt-2">
+                Manage agenda session information
+              </p>
             </div>
 
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+
                 const formData = new FormData(e.target);
+
                 const sessionData = {
                   title: formData.get("title"),
-                  speaker: formData.get("speaker"),
-                  date: formData.get("date"),
+                  speaker_name: formData.get("speaker_name"),
+                  session_type: formData.get("session_type"),
+                  location: formData.get("location"),
+                  description: formData.get("description"),
                   time: formData.get("time"),
+                  status: Number(formData.get("status")),
                 };
 
                 if (editingSession) {
@@ -505,63 +568,129 @@ function Agenda() {
                 }
               }}
             >
-              <div className="p-6 space-y-4">
-                <input
-                  name="title"
-                  defaultValue={editingSession?.title || ""}
-                  placeholder="Session Title"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
+              {/* Body */}
+              <div className="p-8">
+                <div className="grid grid-cols-3 gap-5">
+                  {/* Session Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Session Title
+                    </label>
 
-                <input
-                  name="speaker"
-                  defaultValue={editingSession?.speaker || ""}
-                  placeholder="Speaker Name"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
+                    <input
+                      name="title"
+                      defaultValue={editingSession?.title || ""}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
 
-                <input
-                  name="date"
-                  type="date"
-                  defaultValue={
-                    editingSession?.date
-                      ? new Date(editingSession.date)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
+                  {/* Speaker */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Speaker Name
+                    </label>
 
-                <input
-                  name="time"
-                  type="time"
-                  defaultValue={editingSession?.time || ""}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
+                    <input
+                      name="speaker_name"
+                      defaultValue={editingSession?.speaker_name || ""}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Session Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Session Type
+                    </label>
+
+                    <input
+                      name="session_type"
+                      defaultValue={editingSession?.session_type || ""}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Location
+                    </label>
+
+                    <input
+                      name="location"
+                      defaultValue={editingSession?.location || ""}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Time */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Time
+                    </label>
+
+                    <input
+                      name="time"
+                      defaultValue={editingSession?.time || ""}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Status
+                    </label>
+
+                    <select
+                      name="status"
+                      defaultValue={editingSession?.status ?? 1}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value={1}>Active</option>
+                      <option value={0}>Inactive</option>
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div className="col-span-3">
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      Description
+                    </label>
+
+                    <textarea
+                      name="description"
+                      defaultValue={editingSession?.description || ""}
+                      rows={4}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="p-6 border-t flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl transition font-medium"
-                >
-                  {editingSession ? "Update Session" : "Add Session"}
-                </button>
-
+              {/* Footer */}
+              <div className="px-8 py-5 border-t bg-slate-50 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setEditingSession(null);
                     setIsModalOpen(false);
                   }}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 py-3 rounded-xl transition font-medium"
+                  className="px-6 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-slate-700 font-medium transition"
                 >
                   Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-8 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium transition"
+                >
+                  {editingSession ? "Update Session" : "Add Session"}
                 </button>
               </div>
             </form>
