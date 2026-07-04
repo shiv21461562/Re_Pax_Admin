@@ -1,6 +1,6 @@
   import axios from "axios";
 
-  const API_URL = "http://electrocurrent.com/api/blogs";
+  const API_URL = "https://electrocurrent.com/api/blogs";
 
   const getToken = () => sessionStorage.getItem("token");
 

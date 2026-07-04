@@ -1,4 +1,4 @@
-const BASE_URL = "http://electrocurrent.com/api";
+const BASE_URL = "https://electrocurrent.com/api";
 
 export const getContacts = async () => {
 const token = sessionStorage.getItem("token");
