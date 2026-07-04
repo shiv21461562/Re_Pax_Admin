@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/speakers";
+const API_URL = "http://electrocurrent.com/api/speakers";
 
 export const getSpeakers = async () => {
   const response = await axios.get(API_URL);

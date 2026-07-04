@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "http://electrocurrent.com/api";
 
 export const loginAdmin = async (data) => {
   const response = await fetch(

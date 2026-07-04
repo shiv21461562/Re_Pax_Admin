@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/sponsors";
+const API_URL = "http://electrocurrent.com/api/sponsors";
 
 export const getSponsors = async () => {
   const response = await axios.get(API_URL);
