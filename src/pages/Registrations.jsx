@@ -22,6 +22,9 @@ import {
   deleteRegistration,
 } from "../services/RegistrationApi";
 
+import { FiDownload } from "react-icons/fi";
+import { exportRegistrationExcel } from "../utils/exportExcel";
+
 const ROWS_PER_PAGE = 8;
 
 const Registration = () => {
@@ -117,14 +120,17 @@ const Registration = () => {
     (item) =>
       item.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       item.email?.toLowerCase().includes(search.toLowerCase()) ||
-      item.company_name?.toLowerCase().includes(search.toLowerCase())
+      item.company_name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   useEffect(() => {
     setCurrentPage(1);
   }, [search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / ROWS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredData.length / ROWS_PER_PAGE),
+  );
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * ROWS_PER_PAGE;
   const pageData = filteredData.slice(startIdx, startIdx + ROWS_PER_PAGE);
@@ -135,7 +141,14 @@ const Registration = () => {
   };
 
   const getCategoryText = (index) => {
-    const categories = ["Delegate", "Speaker", "Visitor", "Sponsor", "Delegate", "Delegate"];
+    const categories = [
+      "Delegate",
+      "Speaker",
+      "Visitor",
+      "Sponsor",
+      "Delegate",
+      "Delegate",
+    ];
     return categories[index % categories.length];
   };
 
@@ -219,7 +232,7 @@ const Registration = () => {
             <FiTag className="text-gray-400" />
             <span
               className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryBadge(
-                globalIndex
+                globalIndex,
               )}`}
             >
               {getCategoryText(globalIndex)}
@@ -280,7 +293,10 @@ const Registration = () => {
                   {confirmItem.full_name || "This entry"} will be removed.
                 </p>
               </div>
-              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={cancelDelete}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <FiX />
               </button>
             </div>
@@ -324,21 +340,17 @@ const Registration = () => {
       {/* Header with Circle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center">
-         
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
             Registration Management
           </h1>
         </div>
-        <div className="relative w-full sm:w-72">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email or company..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 shadow-sm"
-          />
-        </div>
+        <button
+          onClick={() => exportRegistrationExcel(registrations)}
+          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg shadow-md transition duration-200"
+        >
+          <FiDownload size={18} />
+          Export Excel
+        </button>
       </div>
 
       {/* Desktop Table */}
@@ -348,16 +360,36 @@ const Registration = () => {
             <thead className="bg-orange-600 text-white text-sm font-semibold">
               <tr>
                 <th className="px-4 py-3.5 border-r border-orange-400/40">#</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Full Name</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Company</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Designation</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Email</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Phone</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">City</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Country</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">GST</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Category</th>
-                <th className="px-4 py-3.5 border-r border-orange-400/40">Date</th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Full Name
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Company
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Designation
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Email
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Phone
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  City
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Country
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  GST
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Category
+                </th>
+                <th className="px-4 py-3.5 border-r border-orange-400/40">
+                  Date
+                </th>
                 <th className="px-4 py-3.5 text-center">Action</th>
               </tr>
             </thead>
@@ -419,7 +451,7 @@ const Registration = () => {
                       <td className="px-4 py-3.5">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryBadge(
-                            globalIndex
+                            globalIndex,
                           )}`}
                         >
                           {getCategoryText(globalIndex)}
@@ -470,7 +502,7 @@ const Registration = () => {
           {filteredData.length > 0
             ? `${startIdx + 1} to ${Math.min(
                 startIdx + ROWS_PER_PAGE,
-                filteredData.length
+                filteredData.length,
               )}`
             : "0"}{" "}
           of {filteredData.length} entries
@@ -492,7 +524,7 @@ const Registration = () => {
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter(
                 (p) =>
-                  p === 1 || p === totalPages || Math.abs(p - safePage) <= 1
+                  p === 1 || p === totalPages || Math.abs(p - safePage) <= 1,
               )
               .reduce((acc, p, i, arr) => {
                 if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
@@ -501,7 +533,10 @@ const Registration = () => {
               }, [])
               .map((p, i) =>
                 p === "..." ? (
-                  <span key={`dots-${i}`} className="px-2 text-gray-400 text-sm">
+                  <span
+                    key={`dots-${i}`}
+                    className="px-2 text-gray-400 text-sm"
+                  >
                     …
                   </span>
                 ) : (
@@ -516,7 +551,7 @@ const Registration = () => {
                   >
                     {p}
                   </button>
-                )
+                ),
               )}
 
             <button
