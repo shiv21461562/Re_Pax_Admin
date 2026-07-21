@@ -25,6 +25,9 @@ import {
 import { FiDownload } from "react-icons/fi";
 import { exportRegistrationExcel } from "../utils/exportExcel";
 
+
+
+
 const ROWS_PER_PAGE = 8;
 
 const Registration = () => {
@@ -37,6 +40,41 @@ const Registration = () => {
   const [deleteProgress, setDeleteProgress] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const progressTimer = useRef(null);
+
+
+
+const handleReply = (email) => {
+  const subject = encodeURIComponent(
+    "ETES 2026 | Registration Received Successfully"
+  );
+
+  const body = encodeURIComponent(`Dear Participant,
+
+Greetings from ETES 2026!
+
+Thank you for registering for the Energy Technology & Environment Summit (ETES 2026).
+
+We are pleased to inform you that your registration request has been successfully received by our team.
+
+✅ Your details are currently under review.
+📩 Once the verification process is completed, our team will contact you shortly with your registration confirmation and further event details.
+
+If any additional information is required, we will reach out to you via email or phone.
+
+Thank you for your interest in ETES 2026.
+We look forward to welcoming you to the event.
+
+Best Regards,
+
+ETES 2026 Team
+Emerging Technologies on  Electrical Systems (ETES 2026)
+🌐 https://www.etesevent.com`);
+
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`,
+    "_blank"
+  );
+};
 
   useEffect(() => {
     fetchRegistrations();
@@ -460,15 +498,27 @@ const Registration = () => {
                       <td className="px-4 py-3.5 text-xs text-gray-500">
                         {formatDate(item.created_at)}
                       </td>
-                      <td className="px-4 py-3.5 text-center">
-                        <button
-                          onClick={() => askDelete(item)}
-                          disabled={deleteProgress !== null}
-                          className="bg-red-50 p-2 rounded-xl hover:bg-red-100 transition disabled:opacity-40"
-                        >
-                          <FiTrash2 className="text-red-600" />
-                        </button>
-                      </td>
+                  <td className="px-4 py-3.5 text-center">
+  <div className="flex justify-center gap-2">
+
+    <button
+      onClick={() => handleReply(item.email)}
+      className="bg-blue-50 p-2 rounded-xl hover:bg-blue-100 transition"
+      title="Reply"
+    >
+      <FiMail className="text-blue-600" />
+    </button>
+
+    <button
+      onClick={() => askDelete(item)}
+      disabled={deleteProgress !== null}
+      className="bg-red-50 p-2 rounded-xl hover:bg-red-100 transition disabled:opacity-40"
+    >
+      <FiTrash2 className="text-red-600" />
+    </button>
+
+  </div>
+</td>
                     </tr>
                   );
                 })
